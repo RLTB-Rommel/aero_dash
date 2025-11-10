@@ -1,22 +1,24 @@
 # Aero Dash — Canvas Edition
 
 ## Overview
-**Aero Dash** is a 2D endless-dodger game built using **HTML5 Canvas and JavaScript**. The objective is to move the player’s ship to avoid falling enemy blocks while collecting green pickups to increase score. The game becomes more difficult over time as speed and spawn frequency increase.
+**Aero Dash** is a 2D arcade-style **falling-block dodger game** built using **HTML5 Canvas and JavaScript**.  
+The goal is to move the spaceship catcher to **collect green blocks** and **avoid red blocks**.  
+The game becomes progressively harder as the falling speed and spawn rate increase over time.
 
-This project fulfills the **Game Framework Module** requirements by demonstrating:
-- Rendering of graphics using Canvas
-- Keyboard and touch/mouse input
-- Moveable objects that interact through collision
-- Game progression through score-based level scaling
-- Sound effects and Best Score saving through `localStorage`
+This project demonstrates:
+- Rendering and animation using the **Canvas 2D API**
+- **Keyboard and touch-input controls**
+- **Moveable objects** with collision detection
+- **Score tracking** and **Best Score** persistence with `localStorage`
+- A clear **game loop** driven by `requestAnimationFrame()`
 
 ---
 
 ## How to Run the Game
-1. Open the folder in VS Code.
-2. Open `index.html` in your browser.
-   - If using VS Code, right-click → **Open With Live Server** (recommended).
-3. The game will start immediately.
+1. Download or clone the repository.
+2. Open the project folder in **VS Code**.
+3. Open `index.html` in a browser:
+   - Recommended: Right-click → **Open with Live Server** (VS Code extension).
 
 ---
 
@@ -24,34 +26,43 @@ This project fulfills the **Game Framework Module** requirements by demonstratin
 
 | Action | Keys / Input |
 |-------|--------------|
-| Move | **WASD** or **Arrow Keys** |
-| Mobile / Touch | **Drag finger** on the canvas to move the ship |
-| Restart after Game Over | Press **Enter** or **Tap / Click** the screen |
-| Save High Score | Press **Save** button |
-| Load High Score | Press **Load** button |
+| Move Left / Right | **A** / **D** or **←** / **→** |
+| Move Up / Down | **W** / **S** or **↑** / **↓** |
+| Touch / Mobile Control | **Drag** finger on the canvas to move the ship |
+| Start / Restart Game | Press **Enter** or click **Start** |
 
 ---
 
-## Features Implemented (Matches Module Rubric)
+## Game Features
 
-| Requirement | Implementation |
-|------------|----------------|
-| Display Graphics | Player ship, falling enemies, pickups, and UI drawn on Canvas |
-| User Input | Keyboard + Mouse Click + Touch Drag (mobile supported) |
-| Moveable Objects | Falling enemies + falling pickups + player movement |
-| **One Additional Requirement (at least one required)** | This game includes **both**:<br>• **Levels** (difficulty increases)<br>•**Save & Load** (uses `localStorage`) |
-| Code Comments | Functions include descriptive comments in the script |
-| README File | This document |
-| Video Demonstration |https://youtu.be/1xJGOuOUxfc|
-| GitHub Repository | https://github.com/RLTB-Rommel/aero_dash |2
-
----
-
-## Learning Reflection (Short Summary)
-In this project, I learned how to use **HTML5 Canvas** to draw and animate gameplay elements, how to capture keyboard and touch input, and how to manage game state transitions such as scoring, level scaling, and game over detection. I also learned how to use `localStorage` to store persistent high scores and how to toggle sound using the Web Audio API.
+| Feature | Description |
+|--------|-------------|
+| Canvas Rendering | The ship, falling blocks, background, and UI are drawn using the Canvas API. |
+| Player Movement | Smooth continuous movement using keyboard or touch-drag input. |
+| Falling Blocks | Randomized spawn timing, speed, and block types. |
+| Collision Detection | Checks overlap between the player's hit area and each block. |
+| Score System | Green blocks increase score. Red blocks end the game. |
+| Difficulty Scaling | Spawn rate gradually increases, making the game harder. |
+| Best Score Saving | Highest score is stored using `localStorage` and loads automatically. |
 
 ---
 
-## Video Link:
-https://youtu.be/1xJGOuOUxfc
+## Repository
+https://github.com/RLTB-Rommel/aero_dash
 
+---
+
+## Learning Reflection
+Through this project, I learned how to:
+- Use the HTML5 Canvas API for rendering animated objects.
+- Structure a real-time **game loop** using `requestAnimationFrame()`.
+- Handle **keyboard and touch input** smoothly.
+- Implement **collision detection** and dynamic difficulty scaling.
+- Use `localStorage` to maintain persistent game data across sessions.
+
+This experience helped strengthen my understanding of interactive graphics, game logic structure, and responsive input handling.
+
+---
+
+## (Optional for Submission) Gameplay Video Link
+*([https://youtu.be/1xJGOuOUxfc])*
