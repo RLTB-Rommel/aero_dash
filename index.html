@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aero Dash — Falling Blocks (Green = Catch, Red = Avoid)</title>
+  <style>
+    /* I want a clean, dark look that fills the screen */
+    html, body { height:100%; margin:0; background:#0f172a; color:#e2e8f0; font-family: system-ui, Arial, sans-serif; }
+    /* This wrapper lets me keep a sticky control bar on top and the game centered */
+    .wrap { min-height:100%; display:flex; flex-direction:column; }
+    /* Simple top bar for start/reset and live stats */
+    #ui { display:flex; gap:.5rem; align-items:center; justify-content:center; padding:.5rem; background:#111827; position:sticky; top:0; z-index:2; box-shadow:0 2px 6px rgba(0,0,0,.3) }
+    .btn { padding:.45rem .75rem; border:1px solid #334155; border-radius:.5rem; background:#1f2937; color:#e5e7eb; cursor:pointer; }
+    .btn:hover { background:#374151; }
+    .stat { font-variant-numeric: tabular-nums; background:#0b1220; padding:.25rem .5rem; border-radius:.375rem; border:1px solid #1f2a44; }
+    /* I keep the canvas nicely centered with a bit of padding */
+    #stage { display:grid; place-items:center; padding:12px; }
+    /* I prefer a phone-friendly portrait ratio here (2:3) */
+    canvas { display:block; width:min(100%, 480px); height:auto; aspect-ratio:2/3; background:linear-gradient(180deg,#0b1020,#0a1d37); box-shadow:0 10px 28px rgba(0,0,0,.35); border-radius:14px; }
+    .hint { text-align:center; margin-top:8px; opacity:.85; }
+    .kbd { font-family: ui-monospace, Menlo, Consolas, monospace; background:#0b1220; border:1px solid #1f2a44; padding:.1rem .35rem; border-radius:.375rem; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <!-- Top UI: start/reset and HUD stats -->
+  <div id="ui">
+    <button id="start" class="btn">▶ Start</button>
+    <button id="reset" class="btn" disabled>↺ Reset</button>
+    <div class="stat" id="score">Score: 000</div>
+    <div class="stat" id="best">Best: 000</div>
+  </div>
+
+  <!-- Game stage -->
+  <div id="stage">
+    <canvas id="game" width="480" height="720"></canvas>
+  </div>
+
+  <!-- Quick instruction line -->
+  <div class="hint">
+    Move with <span class="kbd">A/D</span> or <span class="kbd">←/→</span> &middot;
+    Up/Down with <span class="kbd">W/S</span> or <span class="kbd">↑/↓</span> &middot;
+    Catch <b style="color:#22c55e">green</b>, avoid <b style="color:#ef4444">red</b> &middot;
+    <span class="kbd">Enter</span> to (re)start
+  </div>
+</div>
+
+<script>
+(() => {
+  // I grab the canvas and set up drawing
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // UI handles for buttons and stats
+  const btnStart = document.getElementById('start');
+  const btnReset = document.getElementById('reset');
+  const scoreEl = document.getElementById('score');
+  const bestEl  = document.getElementById('best');
+
+  // I keep a best score in localStorage so it survives refresh
+  let best = +localStorage.getItem('ad_fall_best') || 0;
+  bestEl.textContent = 'Best: ' + String(best).padStart(3,'0');
+
+  // This is my player "ship." The width affects the triangle base; height is
+  // the base-to-tip depth used for collision. I’ll draw a triangle from this.
+  const player = { w:80, h:16, x: W/2-40, y: H-80, vx:0, vy:0, speed:6 };
+
+  // All falling items (green good, red bad) live here
+  const items = []; // {x,y,w,h,vy,type:'good'|'bad'}
+
+  // Basic runtime state and spawn timers
+  let running = false;
+  let last = 0;
+  let spawnEvery = 650; // ms between spawns; shrinks to ramp difficulty
+  let spawnTimer = 0;
+  let score = 0;
+
+  // I support both arrows and WASD for two-axis movement
+  const keys = { left:false, right:false, up:false, down:false };
+
+  // Keyboard handlers (I set flags; movement happens each frame)
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') keys.left  = true;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+    if (e.key === 'ArrowUp'    || e.key === 'w' || e.key === 'W') keys.up    = true;
+    if (e.key === 'ArrowDown'  || e.key === 's' || e.key === 'S') keys.down  = true;
+    if (e.key === 'Enter' && !running) start();
+  });
+
+  window.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') keys.left  = false;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+    if (e.key === 'ArrowUp'    || e.key === 'w' || e.key === 'W') keys.up    = false;
+    if (e.key === 'ArrowDown'  || e.key === 's' || e.key === 'S') keys.down  = false;
+  });
+
+  // I also support drag/touch: I map the pointer X to the player X
+  let dragging = false;
+  canvas.addEventListener('pointerdown', e => { dragging = true; moveTo(e); });
+  canvas.addEventListener('pointermove', e => { if (dragging) moveTo(e); });
+  canvas.addEventListener('pointerup',   () => dragging = false);
+  canvas.addEventListener('pointerleave',() => dragging = false);
+  function moveTo(e){
+    const r = canvas.getBoundingClientRect();
+    const x = (e.clientX - r.left) * (W / r.width);
+    player.x = Math.max(0, Math.min(W - player.w, x - player.w/2));
+  }
+
+  // I reset dynamic state for a fresh run
+  function reset(){
+    items.length = 0;
+    score = 0; updateHUD();
+    player.x = W/2 - player.w/2;
+    player.y = H - 80;
+    spawnEvery = 650; spawnTimer = 0;
+  }
+
+  // Start button (or Enter) kicks the loop
+  function start(){
+    reset();
+    running = true;
+    last = 0;
+    btnReset.disabled = false;
+    btnStart.disabled = true;
+    requestAnimationFrame(loop);
+  }
+
+  // When I lose (hit a red), I freeze, show overlay, and unlock Start
+  function gameOver(){
+    running = false;
+    best = Math.max(best, score);
+    localStorage.setItem('ad_fall_best', best);
+    bestEl.textContent = 'Best: ' + String(best).padStart(3,'0');
+
+    ctx.fillStyle = 'rgba(2,6,23,.72)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '700 32px system-ui, Arial';
+    ctx.fillText('Game Over', W/2-90, H/2-10);
+    ctx.font = '600 18px system-ui, Arial';
+    ctx.fillText('Press Enter or ▶ Start', W/2-105, H/2+22);
+
+    btnStart.disabled = false;
+  }
+
+  // I keep the score text fresh
+  function updateHUD(){
+    scoreEl.textContent = 'Score: ' + String(score).padStart(3,'0');
+  }
+
+  // This spawns either a green “good” block or a red “bad” block
+  function spawn(){
+    const type = Math.random() < 0.4 ? 'good' : 'bad'; // 40% good feels fair
+    const size = type === 'good' ? 26 : 32;           // bads are a bit bigger
+    const x = Math.random() * (W - size);
+    const vy = 2 + Math.random()*3 + score*0.02;     // speed scales slowly
+    items.push({ x, y: -size, w:size, h:size, vy, type });
+  }
+
+  // Main loop: update → render → repeat
+  function loop(t){
+    if (!running) return;
+    const dt = Math.min(40, t - (last || t)); // clamp in case of hiccup
+    last = t;
+
+    // --- Update player movement (two axes) ---
+    // Horizontal: I combine the left/right flags into -1/0/1 and move
+    player.vx = (keys.left ? -1 : 0) + (keys.right ? 1 : 0);
+    player.x += player.vx * player.speed;
+    // I clamp X so the ship stays on screen
+    player.x = Math.max(0, Math.min(W - player.w, player.x));
+
+    // Vertical: same approach for up/down
+    player.vy = (keys.up ? -1 : 0) + (keys.down ? 1 : 0);
+    player.y += player.vy * player.speed;
+    // I clamp Y so the base of the triangle stays in-bounds
+    player.y = Math.max(10, Math.min(H - player.h - 10, player.y));
+
+    // --- Spawn logic (ramps difficulty by shrinking interval) ---
+    spawnTimer += dt;
+    if (spawnTimer >= spawnEvery){
+      spawnTimer = 0;
+      spawn();
+      // I slowly reduce the gap to increase item density over time
+      spawnEvery = Math.max(260, spawnEvery - 6);
+    }
+
+    // --- Update each falling item; check collision; clean up ---
+    for (let i = items.length - 1; i >= 0; i--){
+      const it = items[i];
+      it.y += it.vy;
+
+      // I approximate the triangle with the player's bounding box for collision
+      if (overlap(player.x, player.y, player.w, player.h, it.x, it.y, it.w, it.h)){
+        if (it.type === 'good'){
+          score++; updateHUD(); items.splice(i,1); continue;
+        } else {
+          gameOver(); return;
+        }
+      }
+      // If an item falls off screen, I remove it
+      if (it.y > H + 40) items.splice(i,1);
+    }
+
+    // --- Render frame ---
+    ctx.clearRect(0,0,W,H);
+    drawBG(t);
+
+    // Draw all items (green good, red bad)
+    for (const it of items){
+      ctx.fillStyle = it.type === 'good' ? '#22c55e' : '#ef4444';
+      ctx.fillRect(it.x, it.y, it.w, it.h);
+    }
+
+    //Drew my “spaceship” catcher as a triangle
+    // tip at center-top; base along the player's rect bottom
+    ctx.fillStyle = '#60a5fa';
+    ctx.beginPath();
+    const tipX = player.x + player.w/2;
+    const tipY = player.y - 14;                // tip sits slightly above base
+    ctx.moveTo(tipX, tipY);                    // triangle tip
+    ctx.lineTo(player.x,           player.y + player.h); // base left
+    ctx.lineTo(player.x + player.w, player.y + player.h); // base right
+    ctx.closePath();
+    ctx.fill();
+
+    // Minimal HUD inside the canvas so it’s visible in recordings
+    ctx.fillStyle = 'rgba(2,6,23,.55)';
+    ctx.fillRect(12,12,120,36);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '700 20px system-ui, Arial';
+    ctx.fillText('Score ' + String(score).padStart(3,'0'), 22, 36);
+
+    requestAnimationFrame(loop);
+  }
+
+  // Basic AABB overlap for collision (good enough for this arcade feel)
+  function overlap(ax,ay,aw,ah, bx,by,bw,bh){
+    return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+  }
+
+  // I draw a simple moving starfield background for some life
+  function drawBG(t){
+    ctx.globalAlpha = .6;
+    for (let i = 0; i < 60; i++){
+      const x = (i*113 % W) + ((t*0.03 + i*9) % W);
+      const y = (i*71 % H);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(W - (x % W), y, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Buttons do what they say on the tin
+  btnStart.onclick = start;
+  btnReset.onclick = () => {
+    reset();
+    if (!running){ ctx.clearRect(0,0,W,H); drawBG(performance.now()); }
+  };
+
+  // Idle screen so it doesn’t look empty before starting
+  drawBG(performance.now());
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = '700 24px system-ui, Arial';
+  ctx.fillText('Catch GREEN; avoid RED', 70, H/2 - 10);
+  ctx.font = '600 16px system-ui, Arial';
+  ctx.fillText('Press Enter or ▶ Start', 140, H/2 + 18);
+})();
+</script>
+</body>
+</html>
