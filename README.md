@@ -53,6 +53,6 @@ In this project, I learned how to use **HTML5 Canvas** to draw and animate gamep
 
 ---
 
-## Video Link (to be added)
-
+## Video Link:
+https://youtu.be/1xJGOuOUxfc
 
