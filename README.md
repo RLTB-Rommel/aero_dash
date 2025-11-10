@@ -39,7 +39,7 @@ This project fulfills the **Game Framework Module** requirements by demonstratin
 | Display Graphics | Player ship, falling enemies, pickups, and UI drawn on Canvas |
 | User Input | Keyboard + Mouse Click + Touch Drag (mobile supported) |
 | Moveable Objects | Falling enemies + falling pickups + player movement |
-| **One Additional Requirement (at least one required)** | This game includes **all three**:<br>• **Levels** (difficulty increases)<br>**Save & Load** (uses `localStorage`) |
+| **One Additional Requirement (at least one required)** | This game includes **both**:<br>• **Levels** (difficulty increases)<br>•**Save & Load** (uses `localStorage`) |
 | Code Comments | Functions include descriptive comments in the script |
 | README File | This document |
 | Video Demonstration |https://youtu.be/1xJGOuOUxfc|
