@@ -29,7 +29,6 @@ This project fulfills the **Game Framework Module** requirements by demonstratin
 | Restart after Game Over | Press **Enter** or **Tap / Click** the screen |
 | Save High Score | Press **Save** button |
 | Load High Score | Press **Load** button |
-| Toggle Sound | Press **SFX** button |
 
 ---
 
@@ -43,8 +42,8 @@ This project fulfills the **Game Framework Module** requirements by demonstratin
 | **One Additional Requirement (at least one required)** | This game includes **all three**:<br>• **Levels** (difficulty increases)<br>• **Sound Effects** (toggleable)<br>• **Save & Load** (uses `localStorage`) |
 | Code Comments | Functions include descriptive comments in the script |
 | README File | This document |
-| Video Demonstration | (To be added below once recorded) |
-| GitHub Repository | https://github.com/RLTB-Rommel/aero_dash |
+| Video Demonstration |https://youtu.be/1xJGOuOUxfc|
+| GitHub Repository | https://github.com/RLTB-Rommel/aero_dash |2
 
 ---
 
