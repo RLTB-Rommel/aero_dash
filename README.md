@@ -44,7 +44,7 @@ This project fulfills the **Game Framework Module** requirements by demonstratin
 | Code Comments | Functions include descriptive comments in the script |
 | README File | This document |
 | Video Demonstration | (To be added below once recorded) |
-| GitHub Repository | (This repository) |
+| GitHub Repository | https://github.com/RLTB-Rommel/aero_dash |
 
 ---
 
